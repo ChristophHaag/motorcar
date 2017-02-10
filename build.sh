@@ -4,77 +4,10 @@ function check_error {
 
 }
 	
-function build-qtwayland {
-    echo "building qtwayland dependency"
-    QT_SRC_DIR="$DEPEND_DIR/qt5"
-    QT_BUILD_DIR="$BUILD_DIR/qt5"
-    if [ ! -d  "$QT_SRC_DIR" ]
-	then
-	  	echo "qt5 path: $QT_SRC_DIR"
-	  	git clone git://code.qt.io/qt/qt5.git $QT_SRC_DIR
-		check_error $?
-		cd $QT_SRC_DIR
-		git checkout 5.5
-		$QT_SRC_DIR/init-repository --no-webkit  --module-subset=qtbase,qtdeclarative,qtwayland
-		check_error $?
-
-	fi
-
-	#Reset Repositories
-	cd $QT_SRC_DIR
-	git clean -fdx
-	check_error $?
-	git checkout 5.5
-	check_error $?
-
-
-	cd $QT_SRC_DIR/qtbase
-	git clean -fdx
-	check_error $?
-	git checkout 5.5
-	check_error $?
-	
-	cd $QT_SRC_DIR/qtwayland
-	git clean -fdx
-	check_error $?
-	git checkout 5.5
-	check_error $?
-	
-	#Configure
-
-	cd $QT_SRC_DIR
-	./configure -prefix $QT_BUILD_DIR  -debug -confirm-license -opensource -egl -opengl -no-xcb-xlib
-	check_error $?
-	echo "Please verify that EGL on Desktop OpenGL is configured correctly"
-    read -p "Good to Continue? [y/n] " -n 1 -r
-	if [[ ! $REPLY =~ ^[Yy]$ ]]
-	then
-	    exit 1
-	fi
-
-
-	cd $QT_SRC_DIR/qtwayland
-	$QT_SRC_DIR/qtbase/bin/qmake CONFIG+=wayland-compositor
-	check_error $?
-	echo "Please verify that Wayland EGL is present"
-	read -p "Good to Continue? [y/n] " -n 1 -r
-	if [[ ! $REPLY =~ ^[Yy]$ ]]
-	then
-	    exit 1
-	fi
-
-	cd $QT_SRC_DIR
-	make -j4
-	check_error $?
-
-    make -j4 install
-    check_error $?
-}
-
 function build-libmotorcar-compositor {
     echo "building libmotorcar-compositor"
     cd $MOTORCAR_DIR
-    $BUILD_DIR/qt5/bin/qmake
+    qmake
 	check_error $?
     make clean
 	check_error $?
@@ -196,9 +129,6 @@ for arg in "$@"
 do
 
 	case "$arg" in
-        qtwayland)
-			build-qtwayland
-            ;;
         libmotorcar-compositor)
 			build-libmotorcar-compositor 
             ;;
@@ -213,7 +143,7 @@ do
 			;;
         *)
 			echo "Invalid target: $arg"
-			echo "This script accepts the following targets: qtwayland libmotorcar-compositor rift-hydra-compositor simple-compositor motorcar-demo-client"
+			echo "This script accepts the following targets: libmotorcar-compositor rift-hydra-compositor simple-compositor motorcar-demo-client"
             echo "Usage: $0 [target1 [target2 [...]]]"
             exit 1
             ;;
