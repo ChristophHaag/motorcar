@@ -55,7 +55,7 @@
 //  @@JAF - for the Buffer attacher class
 #include <QOpenGLTexture>
 #include <qwaylandsurface.h>
-#include <QtCompositor/qwaylandbufferref.h>
+#include <QtWaylandCompositor/qwaylandbufferref.h>
 //  @@JAF - END
 
 namespace qtmotorcar{

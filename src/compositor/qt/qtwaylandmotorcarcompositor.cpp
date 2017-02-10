@@ -42,9 +42,9 @@
 #include <qt/qtwaylandmotorcarseat.h>
 
 
-#include <QtCompositor/qwaylandsurface.h>
-#include <QtCompositor/qwaylandcompositor.h>
-#include <QtCompositor/qwaylandinput.h>
+#include <QtWaylandCompositor/qwaylandsurface.h>
+#include <QtWaylandCompositor/qwaylandcompositor.h>
+#include <QtWaylandCompositor/qwaylandseat.h>
 
 #include <QScreen>
 #include <QDateTime>

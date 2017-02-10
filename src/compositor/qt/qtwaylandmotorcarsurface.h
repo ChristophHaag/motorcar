@@ -41,10 +41,10 @@
 #include "qt/qtwaylandmotorcarcompositor.h"
 
 #include <qwaylandsurface.h>
-#include <qwaylandinput.h>
+#include <qwaylandseat.h>
 
 #include <QLinkedList>
-#include <QtCompositor/qwaylandsurfaceview.h>
+#include <QtWaylandCompositor/qwaylandview.h>
 
 #include <glm/glm.hpp>
 

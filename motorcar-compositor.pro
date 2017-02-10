@@ -1,4 +1,4 @@
-QT += gui widgets gui-private core-private compositor compositor-private
+QT += gui widgets gui-private core-private waylandcompositor waylandcompositor-private
 
 TEMPLATE = lib
 
