@@ -54,7 +54,9 @@
 
 //  @@JAF - for the Buffer attacher class
 #include <QOpenGLTexture>
-#include <qwaylandsurface.h>
+#include <QtWaylandCompositor/QWaylandCompositor>
+#include <QtWaylandCompositor/QWaylandSurface>
+#include <QtWaylandCompositor/QWaylandSurfaceView> //TODO: doesn't exist
 #include <QtWaylandCompositor/qwaylandbufferref.h>
 //  @@JAF - END
 
@@ -64,7 +66,7 @@ class QtWaylandMotorcarSurface;
 class QtWaylandMotorcarSeat;
 
 
-class QtWaylandMotorcarCompositor : public QObject, public QWaylandCompositor, public motorcar::Compositor
+class QtWaylandMotorcarCompositor : public QWaylandCompositor, public motorcar::Compositor
 {
     Q_OBJECT
 public:
@@ -144,53 +146,35 @@ private:
 };
 
 //  This is borowed from the qtwayland examples
-class BufferAttacher : public QWaylandBufferAttacher
+class BufferAttacher : public QWaylandSurfaceView
 {
 public:
     BufferAttacher()
-        : QWaylandBufferAttacher()
+    : QWaylandSurfaceView()
         , shmTex(0)
     {
     }
 
     ~BufferAttacher()
     {
-        delete shmTex;
+        if (m_texture)
+	    glDeleteTextures(1, &m_texture);
     }
 
-    void attach(const QWaylandBufferRef &ref) Q_DECL_OVERRIDE
+    GLuint updateTextureToCurrentBuffer()
     {
-        if (bufferRef) {
-            if (bufferRef.isShm()) {
-                delete shmTex;
-                shmTex = 0;
-            } else {
-                bufferRef.destroyTexture();
-            }
-        }
+       if (advance()) {
+           if (m_texture)
+               glDeleteTextures(1, &m_texture);
+           glGenTextures(1, &m_texture);
+           glBindTexture(GL_TEXTURE_2D, m_texture);
+           currentBuffer().bindToTexture();
+       }
+       return m_texture;
+     }
 
-        bufferRef = ref;
-
-        if (bufferRef) {
-            if (bufferRef.isShm()) {
-                shmTex = new QOpenGLTexture(bufferRef.image(), QOpenGLTexture::DontGenerateMipMaps);
-                texture = shmTex->textureId();
-            } else {
-                texture = bufferRef.createTexture();
-            }
-        }
-    }
-
-    QImage image() const
-    {
-        if (!bufferRef || !bufferRef.isShm())
-            return QImage();
-        return bufferRef.image();
-    }
-
-    QOpenGLTexture *shmTex;
-    QWaylandBufferRef bufferRef;
-    GLuint texture;
+private:
+    GLuint m_texture;
 };
 }
 
