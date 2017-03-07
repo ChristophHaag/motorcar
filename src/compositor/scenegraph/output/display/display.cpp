@@ -35,9 +35,15 @@
 #include <scenegraph/output/display/display.h>
 
 using namespace motorcar;
+#include <osvr/ClientKit/Context.h>
+#include <osvr/ClientKit/Interface.h>
+#include <osvr/ClientKit/InterfaceStateC.h>
+#include <osvr/ClientKit/Display.h>
 
-
-
+osvr::clientkit::ClientContext osvrcontext("com.motorcar");
+osvr::clientkit::Interface head = osvrcontext.getInterface("/me/head");;
+OSVR_PoseState state;
+OSVR_TimeValue timestamp;
 Display::Display(OpenGLContext *glContext, glm::vec2 displayDimensions, PhysicalNode *parent, const glm::mat4 &transform)
     :PhysicalNode(parent, transform)
     ,m_glContext(glContext)
@@ -75,6 +81,33 @@ void Display::prepareForDraw()
     glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     glEnable(GL_BLEND);
     glBlendFunc (GL_ONE,GL_ONE_MINUS_SRC_ALPHA);
+    osvrcontext.update();
+    OSVR_PoseState state;
+    OSVR_TimeValue timestamp;
+    OSVR_ReturnCode ret = osvrGetPoseState(head.get(), &timestamp, &state);
+    if (OSVR_RETURN_SUCCESS != ret) {
+        std::cout << "No pose state!" << std::endl;
+        return;
+    } else {
+        std::cout << "Got POSE state: Position = ("
+                  << state.translation.data[0] << ", "
+                  << state.translation.data[1] << ", "
+                  << state.translation.data[2] << "), orientation = ("
+                  << osvrQuatGetW(&(state.rotation)) << ", ("
+                  << osvrQuatGetX(&(state.rotation)) << ", "
+                  << osvrQuatGetY(&(state.rotation)) << ", "
+                  << osvrQuatGetZ(&(state.rotation)) << ")"
+                  << std::endl;
+    }
+
+	glm::vec3 position = glm::vec3(state.translation.data[0], state.translation.data[1], state.translation.data[2]);
+    glm::quat orientation;
+    orientation.x = osvrQuatGetW(&(state.rotation));
+    orientation.y = osvrQuatGetW(&(state.rotation));
+    orientation.z = osvrQuatGetW(&(state.rotation));
+    orientation.w = osvrQuatGetW(&(state.rotation));
+    glm::mat4 transform = glm::translate(glm::mat4(), position) * glm::mat4_cast(orientation);
+    this->setTransform(transform);
 }
 
 
