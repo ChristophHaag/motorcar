@@ -39,7 +39,7 @@ using namespace motorcar;
 void OsvrHMD::prepareForDraw()
 {
 
-    OSVRDisplay::prepareForDraw();
+	OSVRDisplay::prepareForDraw();
 
 
     osvrcontext.update();
@@ -50,6 +50,7 @@ void OsvrHMD::prepareForDraw()
         std::cout << "No pose state!" << std::endl;
         return;
     } else {
+    	/*
         std::cout << "Got POSE state: Position = ("
                   << state.translation.data[0] << ", "
                   << state.translation.data[1] << ", "
@@ -59,6 +60,7 @@ void OsvrHMD::prepareForDraw()
                   << osvrQuatGetY(&(state.rotation)) << ", "
                   << osvrQuatGetZ(&(state.rotation)) << ")"
                   << std::endl;
+                  */
     }
 
 	glm::vec3 position = glm::vec3(state.translation.data[0], state.translation.data[1], state.translation.data[2]);
@@ -126,9 +128,19 @@ OsvrHMD::OsvrHMD(Skeleton *skeleton, OpenGLContext *glContext, PhysicalNode *par
 	int win_width = dimensions.width, win_height = dimensions.height;
 	printf("Reported hmd size: %d, %d. Default Framebuffer size: %d, %d\n",win_width, win_height, glContext->defaultFramebufferSize().x, glContext->defaultFramebufferSize().y );
 
+	setRenderTargetSize(glm::ivec2(win_width, win_height));
 
-    float camToDisplayDistance = 0.1f;
-    ViewPoint *vp = new ViewPoint(.01f, 100.0f, this, this, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, camToDisplayDistance)));
+	float near = .01f, far = 10.0f;
+
+	glm::vec4 normalizedViewportParams = glm::vec4( 0,
+													0,
+													win_width,
+													win_height);
+
+	glm::vec3 HmdToEyeViewOffset = -1.0f * glm::vec3(1,
+												1,
+												1);
+    ViewPoint *vp = new ViewPoint(near, far, this, this, glm::translate(glm::mat4(), HmdToEyeViewOffset), normalizedViewportParams, glm::vec3(0));
 	addViewpoint(vp);
 
 

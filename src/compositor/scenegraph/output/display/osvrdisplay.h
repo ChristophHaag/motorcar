@@ -52,13 +52,22 @@ public:
 	OSVRDisplay(OpenGLContext *glContext, glm::vec2 displayDimensions, PhysicalNode *parent, const glm::mat4 &transform = glm::mat4());
     virtual ~OSVRDisplay();
 
-private:
+    //inherited from Display
+    virtual void prepareForDraw() override;
+    virtual void finishDraw() override;
 
+    virtual GLuint activeFrameBuffer() const override;
+    virtual GLuint depthBufferTexture() const override;
+
+private:
+    bool m_renderingToTexture;
+    glm::ivec2 m_renderTargetSize;
+    GLuint m_frameBuffer, m_colorBufferTexture, m_depthBufferTexture;
 
 protected:
+    void setRenderTargetSize(glm::ivec2 size);
 };
 }
 
-
-
 #endif // OSVRDISPLAY_H
+

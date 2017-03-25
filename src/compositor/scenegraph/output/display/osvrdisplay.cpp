@@ -45,6 +45,36 @@ OSVRDisplay::OSVRDisplay(OpenGLContext *glContext, glm::vec2 displayDimensions, 
 
 }
 
+void OSVRDisplay::prepareForDraw() {
+
+}
+
+void OSVRDisplay::finishDraw() {
+
+}
+
+void OSVRDisplay::setRenderTargetSize(glm::ivec2 size){
+    m_renderTargetSize = size;
+
+    createOrUpdateFBO("RenderToTextureDisplay Primary Frame Buffer", m_frameBuffer,
+                        m_colorBufferTexture, true,
+                        m_depthBufferTexture, false, size);
+    createOrUpdateFBO("Display Scratch Frame Buffer", m_scratchFrameBuffer,
+                        m_scratchColorBufferTexture, true,
+                        m_scratchDepthBufferTexture, true, size);
+}
+
+
+GLuint OSVRDisplay::activeFrameBuffer() const
+{
+    return m_frameBuffer;
+}
+
+GLuint OSVRDisplay::depthBufferTexture() const
+{
+    return m_depthBufferTexture;
+}
+
 OSVRDisplay::~OSVRDisplay()
 {
     glDeleteTextures(1, &m_scratchColorBufferTexture);
