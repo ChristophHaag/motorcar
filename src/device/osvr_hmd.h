@@ -43,6 +43,9 @@
 #include <osvr/ClientKit/Interface.h>
 #include <osvr/ClientKit/InterfaceStateC.h>
 #include <osvr/ClientKit/Display.h>
+#include <osvr/RenderKit/RenderManager.h>
+#include <osvr/RenderKit/GraphicsLibraryOpenGL.h>
+#include <osvr/RenderKit/RenderKitGraphicsTransforms.h>
 
 #include <glm/gtc/quaternion.hpp>
 

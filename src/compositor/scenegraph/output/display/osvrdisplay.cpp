@@ -46,11 +46,16 @@ OSVRDisplay::OSVRDisplay(OpenGLContext *glContext, glm::vec2 displayDimensions, 
 }
 
 void OSVRDisplay::prepareForDraw() {
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_frameBuffer);
+    m_renderingToTexture = true;
 }
 
 void OSVRDisplay::finishDraw() {
-
 }
 
 void OSVRDisplay::setRenderTargetSize(glm::ivec2 size){

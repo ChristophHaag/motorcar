@@ -33,6 +33,7 @@
 **
 ****************************************************************************/
 #include "osvr_hmd.h"
+#include <GL/glx.h>
 
 using namespace motorcar;
 
@@ -83,6 +84,83 @@ void OsvrHMD::finishDraw()
 
 }
 
+
+// Callback to set up for rendering into a given eye (viewpoint and projection).
+void SetupEye(
+    void* userData //< Passed into SetViewProjectionCallback
+    , osvr::renderkit::GraphicsLibrary library //< Graphics library context to use
+    , osvr::renderkit::RenderBuffer buffers //< Buffers to use
+    , osvr::renderkit::OSVR_ViewportDescription
+        viewport //< Viewport set by RenderManager
+    , osvr::renderkit::OSVR_ProjectionMatrix
+        projection //< Projection matrix set by RenderManager
+    , size_t whichEye //< Which eye are we setting up for?
+    ) {
+    // Make sure our pointers are filled in correctly.  The config file selects
+    // the graphics library to use, and may not match our needs.
+    if (library.OpenGL == nullptr) {
+        std::cerr
+            << "SetupEye: No OpenGL GraphicsLibrary, this should not happen"
+            << std::endl;
+        return;
+    }
+    if (buffers.OpenGL == nullptr) {
+        std::cerr << "SetupEye: No OpenGL RenderBuffer, this should not happen"
+                  << std::endl;
+        return;
+    }
+
+    // Set the viewport
+    glViewport(static_cast<GLint>(viewport.left),
+      static_cast<GLint>(viewport.lower),
+      static_cast<GLint>(viewport.width),
+      static_cast<GLint>(viewport.height));
+}
+
+// Callback to set up a given display, which may have one or more eyes in it
+void SetupDisplay(
+    void* userData //< Passed into SetDisplayCallback
+    , osvr::renderkit::GraphicsLibrary library //< Graphics library context to use
+    , osvr::renderkit::RenderBuffer buffers //< Buffers to use
+    ) {
+    // Make sure our pointers are filled in correctly.  The config file selects
+    // the graphics library to use, and may not match our needs.
+    if (library.OpenGL == nullptr) {
+        std::cerr
+            << "SetupDisplay: No OpenGL GraphicsLibrary, this should not happen"
+            << std::endl;
+        return;
+    }
+    if (buffers.OpenGL == nullptr) {
+        std::cerr
+            << "SetupDisplay: No OpenGL RenderBuffer, this should not happen"
+            << std::endl;
+        return;
+    }
+
+    osvr::renderkit::GraphicsLibraryOpenGL* glLibrary = library.OpenGL;
+
+    // Clear the screen to black and clear depth
+    glClearColor(0, 0, 0, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+bool SetupRendering(osvr::renderkit::GraphicsLibrary library) {
+    // Make sure our pointers are filled in correctly.
+    if (library.OpenGL == nullptr) {
+        std::cerr << "SetupRendering: No OpenGL GraphicsLibrary, this should "
+                     "not happen"
+                  << std::endl;
+        return false;
+    }
+
+    osvr::renderkit::GraphicsLibraryOpenGL* glLibrary = library.OpenGL;
+
+    // Turn on depth testing, so we get correct ordering.
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    return true;
+}
 
 OsvrHMD::OsvrHMD(Skeleton *skeleton, OpenGLContext *glContext, PhysicalNode *parent)
     : OSVRDisplay(glContext, glm::vec2(0.126, 0.0706), parent, glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.10f)))
@@ -143,10 +221,52 @@ OsvrHMD::OsvrHMD(Skeleton *skeleton, OpenGLContext *glContext, PhysicalNode *par
     ViewPoint *vp = new ViewPoint(near, far, this, this, glm::translate(glm::mat4(), HmdToEyeViewOffset), normalizedViewportParams, glm::vec3(0));
 	addViewpoint(vp);
 
+	auto oglContext = glXGetCurrentContext();
+	auto drawable = glXGetCurrentDrawable();
 
+    // Open OpenGL and set up the context for rendering to
+    // an HMD.  Do this using the OSVR RenderManager interface,
+    // which maps to the nVidia or other vendor direct mode
+    // to reduce the latency.
+    //  As of the 7/13/2016 version of RenderManager, we don't
+    // need to explicitly ask it to share the OpenGL context with
+    // us -- it does so by default.
+    osvr::renderkit::RenderManager* render =
+        osvr::renderkit::createRenderManager(osvrcontext.get(), "OpenGL");
+
+    if ((render == nullptr) || (!render->doingOkay())) {
+        std::cerr << "Could not create RenderManager" << std::endl;
+        return;
+    }
+
+    // Set callback to handle setting up rendering in an eye
+    render->SetViewProjectionCallback(SetupEye);
+
+    // Set callback to handle setting up rendering in a display
+    render->SetDisplayCallback(SetupDisplay);
+
+
+    osvr::renderkit::RenderManager::OpenResults ret = render->OpenDisplay();
+    if (ret.status == osvr::renderkit::RenderManager::OpenStatus::FAILURE) {
+        std::cerr << "Could not open display" << std::endl;
+        delete render;
+        return;
+    }
+    if (ret.library.OpenGL == nullptr) {
+        std::cerr << "Attempted to run an OpenGL program with a config file "
+                  << "that specified a different rendering library."
+                  << std::endl;
+        return;
+    }
+
+    // Set up the rendering state we need.
+    if (!SetupRendering(ret.library)) {
+    	std::cerr << "Setup Rendering failed" << std::endl;
+        return;
+    }
+
+    glXMakeCurrent(glXGetCurrentDisplay(), drawable, oglContext);
 }
-
-
 
 OsvrHMD::~OsvrHMD()
 {
